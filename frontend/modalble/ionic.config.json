@@ -1,0 +1,7 @@
+{
+  "name": "modalble",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}

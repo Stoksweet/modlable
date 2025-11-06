@@ -28,19 +28,13 @@ The platform is cloud-native — it’s designed to run efficiently on **Google 
 
 ```
 modlable/
-├── src/
-│   ├── agents/              # LLM agent logic (training, evaluation, deployment)
-│   ├── models/              # TensorFlowJS model definitions
-│   ├── datasets/            # Data loading & preprocessing utilities
-│   ├── inference/           # API for running inference (local or cloud)
-│   ├── training/            # Training orchestration & checkpoint handling
-│   └── utils/               # Shared helper functions
+├── frontend/
+│   ├── modlable/            # The frontend Angular App
 │
-├── api/
-│   └── main.js              # Express-based REST API for Cloud Run
-│
-├── Dockerfile               # Container configuration for Cloud Run
-├── package.json             # Node project dependencies
+├── backend/
+│   └── src/              # Genkit + Cloud Functions/Cloud Run for agents
+│   ├── package.json      # Node project dependencies
+├── Dockerfile               # Container configuration for running it all 
 ├── .env.example             # Example environment configuration
 └── README.md                # You are here
 ```
