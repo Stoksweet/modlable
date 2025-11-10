@@ -1,0 +1,136 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Chat</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="chat-bg" *ngIf="current as conv">
+  <!--
+    Two modes:
+    - START MODE (no repo yet): chat takes over the center "viewer" area.
+    - IDE MODE (repo provided): 3-column layout (History | Viewer | Chat).
+  -->
+  <div class="layout3" [class.start]="!hasRepo(conv)">
+    <!-- LEFT: History (always visible on desktop; hidden on small screens via CSS) -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>Chats</h2>
+        <ion-button size="small" fill="outline" (click)="newChat()">New</ion-button>
+      </div>
+
+      <ion-searchbar placeholder="Search…" class="sidebar-search"></ion-searchbar>
+
+      <div class="conv-list">
+        <button
+          *ngFor="let c of conversations; trackBy: trackByConv"
+          class="conv-item"
+          [class.active]="c.id === selectedId"
+          (click)="selectConversation(c.id)">
+          <div class="conv-title">{{ c.title }}</div>
+          <div class="conv-sub" *ngIf="c.repoOwner && c.repoName">{{ c.repoOwner }}/{{ c.repoName }}</div>
+          <ion-button class="delete" fill="clear" size="small"
+            (click)="deleteConversation(c.id); $event.stopPropagation();">
+            <ion-icon name="trash-outline"></ion-icon>
+          </ion-button>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MIDDLE: Viewer OR (in start mode) Chat -->
+    <section class="viewerPane" *ngIf="hasRepo(conv); else startChat">
+      <header class="viewer-toolbar">
+        <div class="repo">
+          <div class="name">{{ conv.repoOwner }}/{{ conv.repoName }}</div>
+          <a *ngIf="conv.repoUrl !== '—'" class="url" [href]="conv.repoUrl" target="_blank" rel="noopener">
+            {{ conv.repoUrl }}
+          </a>
+        </div>
+
+        <div class="viewer-controls">
+          <ion-segment [value]="conv.viewer" (ionChange)="onViewerChange($event)">
+            <ion-segment-button value="github1s">
+              <ion-label>Embedded VS Code (github1s)</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="vscode">
+              <ion-label>VS Code (vscode.dev)</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+          <ion-button fill="outline" size="small" (click)="openExternally()">
+            <ion-icon name="open-outline" slot="start"></ion-icon>
+            Open Externally
+          </ion-button>
+        </div>
+      </header>
+
+      <section class="viewer" *ngIf="conv.viewer === 'github1s'">
+        <iframe
+          *ngIf="conv.iframeUrl"
+          class="code-frame"
+          [src]="conv.iframeUrl"
+          title="VS Code Viewer"
+          referrerpolicy="no-referrer"
+          loading="eager">
+        </iframe>
+        <div class="frame-note" *ngIf="!conv.iframeUrl">
+          Embedded viewer unavailable. Try “Open Externally”.
+        </div>
+      </section>
+
+      <section class="viewer blocked" *ngIf="conv.viewer === 'vscode'">
+        <div class="frame-note">
+          vscode.dev usually blocks embedding in iframes. Use “Open Externally”.
+        </div>
+      </section>
+    </section>
+
+    <!-- START MODE: Chat in the center viewer slot -->
+    <ng-template #startChat>
+      <section class="viewerPane start-chat">
+        <div class="messages">
+          <div *ngFor="let m of conv.messages; trackBy: trackByMsg"
+               class="bubble"
+               [class.me]="m.role === 'user'">
+            <div class="avatar" [attr.data-role]="m.role"></div>
+            <pre class="content">{{ m.content }}</pre>
+          </div>
+        </div>
+
+        <footer class="composer">
+          <form [formGroup]="form" (ngSubmit)="submit()" class="composer-form">
+            <ion-input
+              type="url"
+              formControlName="repoUrl"
+              placeholder="Paste GitHub repo URL (https://github.com/owner/repo)">
+            </ion-input>
+            <ion-button type="submit" [disabled]="form.invalid">Send</ion-button>
+          </form>
+          <div class="error" *ngIf="urlError">{{ urlError }}</div>
+        </footer>
+      </section>
+    </ng-template>
+
+    <!-- RIGHT: Chat pane (visible only when a repo exists) -->
+    <section class="chatPane" *ngIf="hasRepo(conv)">
+      <div class="messages">
+        <div *ngFor="let m of conv.messages; trackBy: trackByMsg"
+             class="bubble"
+             [class.me]="m.role === 'user'">
+          <div class="avatar" [attr.data-role]="m.role"></div>
+          <pre class="content">{{ m.content }}</pre>
+        </div>
+      </div>
+
+      <footer class="composer">
+        <form [formGroup]="form" (ngSubmit)="submit()" class="composer-form">
+          <ion-input
+            type="url"
+            formControlName="repoUrl"
+            placeholder="Paste GitHub repo URL (https://github.com/owner/repo)">
+          </ion-input>
+          <ion-button type="submit" [disabled]="form.invalid">Send</ion-button>
+        </form>
+        <div class="error" *ngIf="urlError">{{ urlError }}</div>
+      </footer>
+    </section>
+  </div>
+</ion-content>
