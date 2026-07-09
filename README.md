@@ -17,6 +17,8 @@ The platform is cloud-native — it’s designed to run efficiently on **Google 
 ## 🚀 Features
 
 * 🧩 **Modular Training Pipelines** — Train custom token-based language models in TensorFlowJS.
+* 🎛️ **Node-to-Python SFT Training Bridge** — Orchestrate heavy Hugging Face and TRL training workloads (SFTTrainer/PEFT LoRA) from TypeScript using real-time child process stdout streaming and stdin JSON IPC.
+* 🧪 **Build-Time Schema Verification** — Automated type-checking that matches TypeScript training configurations with Python dataclasses via introspection to prevent API drift.
 * 🤖 **LLM Orchestration Agents** — Use pre-configured agents to guide hyperparameter tuning, dataset preparation, and model evaluation.
 * ☁️ **Cloud Run Deployment** — Run models and inference endpoints on demand using containerized builds.
 * 🔁 **Seamless Inference API** — Serve models as REST endpoints for text generation, embedding, or classification.
@@ -29,12 +31,20 @@ The platform is cloud-native — it’s designed to run efficiently on **Google 
 ```
 modlable/
 ├── frontend/
-│   ├── modlable/            # The frontend Angular App
+│   ├── modalble/            # The frontend Angular/Ionic App
 │
 ├── backend/
-│   └── src/              # Genkit + Cloud Functions/Cloud Run for agents
-│   ├── package.json      # Node project dependencies
-├── Dockerfile               # Container configuration for running it all 
+│   ├── src/                 # Genkit + Cloud Functions/Cloud Run for agents
+│   │   ├── trainer/         # Node-to-Python SFT Training Bridge
+│   │   │   ├── types.ts     # TypeScript interfaces for configurations
+│   │   │   ├── NodeSFTTrainer.ts # Wrapper orchestration class
+│   │   │   ├── bridge.py    # Python runner executing TRL SFTTrainer
+│   │   │   └── verify_types.py # Introspection type verification layer
+│   │   └── index.ts         # Agent logic and flows
+│   ├── Dockerfile           # Dual-runtime container environment
+│   ├── requirements.txt     # Python training packages (torch, trl, transformers)
+│   └── package.json         # Node project dependencies
+├── docker-compose.yaml      # Multi-container local execution mapping
 ├── .env.example             # Example environment configuration
 └── README.md                # You are here
 ```
@@ -47,6 +57,7 @@ Before getting started, ensure you have:
 
 * **Node.js** ≥ 18.x
 * **npm** or **yarn**
+* **Python** ≥ 3.10 and **pip** (for local Python bridge development)
 * **Docker** (for containerization)
 * **Google Cloud SDK** (`gcloud`) configured with billing and permissions
 * A **Google Cloud Project** with **Cloud Run**, **Artifact Registry**, and **Cloud Build** enabled
