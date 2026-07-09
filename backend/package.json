@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node lib/index.js",
-    "build": "tsc",
+    "verify:types": "python3 src/trainer/verify_types.py",
+    "build": "npm run verify:types && tsc",
     "build:watch": "tsc --watch",
     "genkit:ui": "genkit start -- npx tsx --watch src/index.ts"
   },

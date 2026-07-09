@@ -1,0 +1,37 @@
+version: "3.9"
+
+services:
+  frontend:
+    container_name: modlable_frontend
+    working_dir: /app
+    build:
+      context: ./frontend/modlable
+      dockerfile: Dockerfile
+    command: ["ionic", "serve", "--host", "0.0.0.0", "--port", "8100"]
+    ports:
+      - "8100:8100"
+    volumes:
+      - ./frontend/modlable:/app
+    environment:
+      - NODE_ENV=development
+    tty: true
+    stdin_open: true
+
+  backend:
+    container_name: modlable_backend
+    working_dir: /app
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5001"   # Firebase Functions emulator port
+      - "4000:4000"   # Emulator UI port
+      - "8080:8080"   # REST API endpoint
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - /app/.venv
+    environment:
+      - NODE_ENV=development
+    tty: true
+    stdin_open: true
