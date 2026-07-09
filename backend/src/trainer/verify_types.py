@@ -20,7 +20,7 @@ def parse_ts_interface(file_path, interface_name):
         content = f.read()
 
     # Locate the interface definition block
-    pattern = rf"export\s+interface\s+{interface_name}\s*\{{([\s\S]*?)\}}"
+    pattern = rf"export\s+interface\s+{interface_name}(?:\s+extends\s+\w+)?\s*\{{([\s\S]*?)\}}"
     match = re.search(pattern, content)
     if not match:
         return {}
@@ -34,6 +34,29 @@ def parse_ts_interface(file_path, interface_name):
     
     return fields
 
+def verify_class_alignment(ts_fields, py_class, class_name, type_mappings):
+    print(f"\nVerifying {class_name} field compatibility...")
+    py_fields = {f.name: f for f in dataclasses.fields(py_class)}
+    mismatches = 0
+    
+    for ts_name, ts_type in ts_fields.items():
+        if ts_name not in py_fields:
+            print(f"❌ MISMATCH: TS property '{ts_name}' does not exist in Python TRL {class_name} class.")
+            mismatches += 1
+            continue
+            
+        py_field = py_fields[ts_name]
+        allowed_py_types = type_mappings.get(ts_type, (object,))
+        
+        # Check type matching loosely
+        type_str = str(py_field.type)
+        type_matched = any(p.__name__ in type_str for p in allowed_py_types)
+
+        if not type_matched:
+            print(f"⚠️ TYPE WARNING: '{ts_name}' in TS is '{ts_type}' but Python {class_name} expects '{py_field.type}'")
+            
+    return mismatches
+
 def verify_alignment():
     print("=== Launching Schema Verification Layer ===")
     
@@ -45,11 +68,13 @@ def verify_alignment():
         print("Unable to perform live python class introspection. Skipping runtime check.")
         return True
 
-    from trl import SFTConfig as PySFTConfig
+    from trl import SFTConfig as PySFTConfig, DPOConfig as PyDPOConfig, GRPOConfig as PyGRPOConfig
     from peft import LoraConfig as PyLoraConfig
 
     # 2. Extract types from TypeScript
     ts_sft_fields = parse_ts_interface(ts_file, "SFTConfig")
+    ts_dpo_fields = parse_ts_interface(ts_file, "DPOConfig")
+    ts_grpo_fields = parse_ts_interface(ts_file, "GRPOConfig")
     ts_lora_fields = parse_ts_interface(ts_file, "LoraConfig")
 
     if not ts_sft_fields:
@@ -67,28 +92,17 @@ def verify_alignment():
     mismatches = 0
 
     # 3. Verify SFTConfig
-    print("\nVerifying SFTConfig field compatibility...")
-    py_sft_fields = {f.name: f for f in dataclasses.fields(PySFTConfig)}
-    
-    for ts_name, ts_type in ts_sft_fields.items():
-        if ts_name not in py_sft_fields:
-            print(f"❌ MISMATCH: TS property '{ts_name}' does not exist in Python TRL SFTConfig class.")
-            mismatches += 1
-            continue
-            
-        py_field = py_sft_fields[ts_name]
-        # Perform loose type checking based on mapping
-        allowed_py_types = type_mappings.get(ts_type, (object,))
-        
-        # Check if python field origin type matches any allowed type
-        origin_type = py_field.type
-        type_str = str(origin_type)
-        type_matched = any(p.__name__ in type_str for p in allowed_py_types)
+    mismatches += verify_class_alignment(ts_sft_fields, PySFTConfig, "SFTConfig", type_mappings)
 
-        if not type_matched:
-            print(f"⚠️ TYPE WARNING: '{ts_name}' in TS is '{ts_type}' but Python SFTConfig expects '{origin_type}'")
+    # 4. Verify DPOConfig
+    if ts_dpo_fields:
+        mismatches += verify_class_alignment(ts_dpo_fields, PyDPOConfig, "DPOConfig", type_mappings)
 
-    # 4. Verify LoraConfig
+    # 5. Verify GRPOConfig
+    if ts_grpo_fields:
+        mismatches += verify_class_alignment(ts_grpo_fields, PyGRPOConfig, "GRPOConfig", type_mappings)
+
+    # 6. Verify LoraConfig
     if ts_lora_fields:
         print("\nVerifying LoraConfig field compatibility...")
         py_lora_fields = {f.name: f for f in dataclasses.fields(PyLoraConfig)}

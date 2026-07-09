@@ -29,8 +29,39 @@ export interface SFTConfig {
 export interface SFTTrainerArgs {
   model_id: string;
   dataset_path: string; // Path to local JSON/JSONL/CSV or HuggingFace Hub name
-  dataset_text_field: string;
+  dataset_text_field?: string;
   max_seq_length?: number;
   config: SFTConfig;
   lora?: LoraConfig;  // Optional parameter for PEFT/LoRA fine-tuning
+}
+
+// === Direct Preference Optimization (DPO) ===
+export interface DPOConfig extends SFTConfig {
+  beta?: number; // Implicit reward scaling coefficient
+}
+
+export interface DPOTrainerArgs {
+  model_id: string;
+  dataset_path: string;
+  config: DPOConfig;
+  lora?: LoraConfig;
+}
+
+// === Group Relative Policy Optimization (GRPO / Online RL) ===
+export interface GRPOConfig {
+  output_dir: string;
+  learning_rate?: number;
+  num_train_epochs?: number;
+  per_device_train_batch_size?: number;
+  gradient_accumulation_steps?: number;
+  num_generations?: number; // Group size (e.g., 4 or 8)
+  logging_steps?: number;
+  no_cuda?: boolean; // Keep run on CPU
+}
+
+export interface GRPOTrainerArgs {
+  model_id: string;
+  dataset_path: string;
+  reward_function_type: "boxed_math";
+  config: GRPOConfig;
 }
